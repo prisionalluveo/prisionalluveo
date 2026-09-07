@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Projetos — Sistema Prisional</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="topo">
+    <div class="marca">🔒 Sistema Prisional</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="inventario.html">Inventário</a>
+      <a href="plantao.html">Plantão</a>
+      <a href="escala.html">Escala de Manutenção</a>
+      <a href="ordens.html">Ordens de Compra</a>
+      <a href="projetos.html">Projetos</a>
+    </nav>
+    <button onclick="sair()">Sair</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>📁 Novo projeto</h2>
+
+      <label>Título</label>
+      <input id="titulo" placeholder="Ex: Implantação de rede na ADM 2">
+
+      <label>Descrição</label>
+      <textarea id="descricao" placeholder="Detalhes do projeto"></textarea>
+
+      <label>Unidade</label>
+      <select id="unidade"></select>
+
+      <label>Responsável</label>
+      <input id="responsavel" placeholder="Nome do responsável">
+
+      <label>Prioridade</label>
+      <select id="prioridade">
+        <option value="baixa">Baixa</option>
+        <option value="media" selected>Média</option>
+        <option value="alta">Alta</option>
+      </select>
+
+      <label>Prazo</label>
+      <input id="prazo" type="date">
+
+      <button class="btn" onclick="salvar()">Salvar projeto</button>
+      <div id="mensagem" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Projetos</h2>
+      <table>
+        <thead>
+          <tr><th>Título</th><th>Unidade</th><th>Responsável</th><th>Prioridade</th><th>Prazo</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody id="listaProjetos"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="supabaseClient.js"></script>
+  <script>
+    async function iniciar() {
+      const sessao = await exigirLogin()
+      if (!sessao) return
+      const selUnidade = document.getElementById('unidade')
+      UNIDADES.forEach(u => selUnidade.appendChild(new Option(u, u)))
+      carregarLista()
+    }
+
+    async function salvar() {
+      const msg = document.getElementById('mensagem')
+      msg.textContent = ''
+
+      const titulo = document.getElementById('titulo').value.trim()
+      const descricao = document.getElementById('descricao').value.trim() || null
+      const unidade = document.getElementById('unidade').value || null
+      const responsavel = document.getElementById('responsavel').value.trim() || null
+      const prioridade = document.getElementById('prioridade').value
+      const prazo = document.getElementById('prazo').value || null
+
+      if (!titulo) {
+        msg.textContent = 'Preencha o título do projeto.'
+        msg.className = 'msg erro'
+        return
+      }
+
+      const { error } = await supabaseClient.from('projetos').insert({ titulo, descricao, unidade, responsavel, prioridade, prazo })
+      if (error) {
+        msg.textContent = 'Erro ao salvar: ' + error.message
+        msg.className = 'msg erro'
+        return
+      }
+
+      msg.textContent = 'Projeto cadastrado.'
+      msg.className = 'msg sucesso'
+      document.getElementById('titulo').value = ''
+      document.getElementById('descricao').value = ''
+      document.getElementById('responsavel').value = ''
+      document.getElementById('prazo').value = ''
+      carregarLista()
+    }
+
+    async function mudarStatus(id, novoStatus) {
+      await supabaseClient.from('projetos').update({ status: novoStatus, atualizado_em: new Date().toISOString() }).eq('id', id)
+      carregarLista()
+    }
+
+    async function excluir(id) {
+      if (!confirm('Excluir este projeto?')) return
+      await supabaseClient.from('projetos').delete().eq('id', id)
+      carregarLista()
+    }
+
+    async function carregarLista() {
+      const { data: projetos } = await supabaseClient.from('projetos').select('*').order('criado_em', { ascending: false })
+
+      const corpo = document.getElementById('listaProjetos')
+      corpo.innerHTML = ''
+      const statusLabel = { aberto: 'Aberto', 'em-andamento': 'Em andamento', concluido: 'Concluído', resolvido: 'Resolvido' }
+      const prioridadeLabel = { baixa: 'Baixa', media: 'Média', alta: 'Alta' }
+
+      ;(projetos || []).forEach(p => {
+        const tr = document.createElement('tr')
+        tr.innerHTML = `
+          <td>${p.titulo}</td>
+          <td>${p.unidade || '—'}</td>
+          <td>${p.responsavel || '—'}</td>
+          <td>${prioridadeLabel[p.prioridade] || p.prioridade}</td>
+          <td>${p.prazo ? new Date(p.prazo + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+          <td>
+            <select onchange="mudarStatus(${p.id}, this.value)" style="padding:4px 6px; font-size:12px">
+              ${Object.entries(statusLabel).map(([v, l]) => `<option value="${v}" ${p.status === v ? 'selected' : ''}>${l}</option>`).join('')}
+            </select>
+          </td>
+          <td><a href="#" onclick='excluir(${p.id}); return false;'>excluir</a></td>
+        `
+        corpo.appendChild(tr)
+      })
+    }
+
+    iniciar()
+  </script>
+</body>
+</html>

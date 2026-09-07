@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Ordens de Compra — Sistema Prisional</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="topo">
+    <div class="marca">🔒 Sistema Prisional</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="inventario.html">Inventário</a>
+      <a href="plantao.html">Plantão</a>
+      <a href="escala.html">Escala de Manutenção</a>
+      <a href="ordens.html">Ordens de Compra</a>
+      <a href="projetos.html">Projetos</a>
+    </nav>
+    <button onclick="sair()">Sair</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>🧾 Nova ordem de compra</h2>
+
+      <label>Número da OC</label>
+      <input id="numero" placeholder="Ex: OC-2026-014">
+
+      <label>Descrição</label>
+      <input id="descricao" placeholder="O que está sendo comprado">
+
+      <label>Fornecedor</label>
+      <input id="fornecedor" placeholder="Nome do fornecedor (opcional)">
+
+      <label>Valor total (R$)</label>
+      <input id="valorTotal" type="number" step="0.01" placeholder="0,00">
+
+      <label>Unidade</label>
+      <select id="unidade"></select>
+
+      <label>Status</label>
+      <select id="status">
+        <option value="aberta">Aberta</option>
+        <option value="aprovada">Aprovada</option>
+        <option value="recebida">Recebida</option>
+        <option value="cancelada">Cancelada</option>
+      </select>
+
+      <button class="btn" onclick="salvar()">Salvar ordem</button>
+      <div id="mensagem" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Ordens cadastradas</h2>
+      <table>
+        <thead>
+          <tr><th>Número</th><th>Descrição</th><th>Fornecedor</th><th>Valor</th><th>Unidade</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody id="listaOrdens"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="supabaseClient.js"></script>
+  <script>
+    async function iniciar() {
+      const sessao = await exigirLogin()
+      if (!sessao) return
+      const selUnidade = document.getElementById('unidade')
+      UNIDADES.forEach(u => selUnidade.appendChild(new Option(u, u)))
+      carregarLista()
+    }
+
+    async function salvar() {
+      const msg = document.getElementById('mensagem')
+      msg.textContent = ''
+
+      const numero = document.getElementById('numero').value.trim()
+      const descricao = document.getElementById('descricao').value.trim() || null
+      const fornecedor = document.getElementById('fornecedor').value.trim() || null
+      const valorStr = document.getElementById('valorTotal').value
+      const valor_total = valorStr ? parseFloat(valorStr) : null
+      const unidade = document.getElementById('unidade').value || null
+      const status = document.getElementById('status').value
+
+      if (!numero) {
+        msg.textContent = 'Preencha o número da OC.'
+        msg.className = 'msg erro'
+        return
+      }
+
+      const { error } = await supabaseClient.from('ordens_compra').insert({ numero, descricao, fornecedor, valor_total, unidade, status })
+      if (error) {
+        msg.textContent = 'Erro ao salvar: ' + error.message
+        msg.className = 'msg erro'
+        return
+      }
+
+      msg.textContent = 'Ordem cadastrada.'
+      msg.className = 'msg sucesso'
+      document.getElementById('numero').value = ''
+      document.getElementById('descricao').value = ''
+      document.getElementById('fornecedor').value = ''
+      document.getElementById('valorTotal').value = ''
+      carregarLista()
+    }
+
+    async function mudarStatus(id, novoStatus) {
+      await supabaseClient.from('ordens_compra').update({ status: novoStatus }).eq('id', id)
+      carregarLista()
+    }
+
+    async function excluir(id) {
+      if (!confirm('Excluir esta ordem de compra?')) return
+      await supabaseClient.from('ordens_compra').delete().eq('id', id)
+      carregarLista()
+    }
+
+    function formatarValor(v) {
+      if (v === null || v === undefined) return '—'
+      return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    }
+
+    async function carregarLista() {
+      const { data: ordens } = await supabaseClient.from('ordens_compra').select('*').order('criado_em', { ascending: false })
+
+      const corpo = document.getElementById('listaOrdens')
+      corpo.innerHTML = ''
+      const statusLabel = { aberta: 'Aberta', aprovada: 'Aprovada', recebida: 'Recebida', cancelada: 'Cancelada' }
+
+      ;(ordens || []).forEach(o => {
+        const tr = document.createElement('tr')
+        tr.innerHTML = `
+          <td>${o.numero}</td>
+          <td>${o.descricao || '—'}</td>
+          <td>${o.fornecedor || '—'}</td>
+          <td>${formatarValor(o.valor_total)}</td>
+          <td>${o.unidade || '—'}</td>
+          <td>
+            <select onchange="mudarStatus(${o.id}, this.value)" style="padding:4px 6px; font-size:12px">
+              ${Object.entries(statusLabel).map(([v, l]) => `<option value="${v}" ${o.status === v ? 'selected' : ''}>${l}</option>`).join('')}
+            </select>
+          </td>
+          <td><a href="#" onclick='excluir(${o.id}); return false;'>excluir</a></td>
+        `
+        corpo.appendChild(tr)
+      })
+    }
+
+    iniciar()
+  </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Inventário — Sistema Prisional</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="topo">
+    <div class="marca">🔒 Sistema Prisional</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="inventario.html">Inventário</a>
+      <a href="plantao.html">Plantão</a>
+      <a href="escala.html">Escala de Manutenção</a>
+      <a href="ordens.html">Ordens de Compra</a>
+      <a href="projetos.html">Projetos</a>
+    </nav>
+    <button onclick="sair()">Sair</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2 id="tituloForm">➕ Novo item</h2>
+      <input type="hidden" id="itemId">
+
+      <label>Nome do ativo</label>
+      <input id="nome" placeholder="Ex: Computador Dell OptiPlex">
+
+      <label>Patrimônio</label>
+      <input id="patrimonio" placeholder="Número do patrimônio (opcional)">
+
+      <label>Tipo</label>
+      <input id="tipo" placeholder="Ex: computador, monitor, impressora, roteador...">
+
+      <label>Unidade</label>
+      <select id="unidade"></select>
+
+      <label>Status</label>
+      <select id="status">
+        <option value="ativo">Ativo</option>
+        <option value="manutencao">Em manutenção</option>
+        <option value="baixado">Baixado</option>
+      </select>
+
+      <label>Observação</label>
+      <textarea id="observacao" placeholder="Detalhes adicionais (opcional)"></textarea>
+
+      <button class="btn" onclick="salvar()">Salvar</button>
+      <button class="btn" style="background:#374151" onclick="cancelarEdicao()" id="btnCancelar" hidden>Cancelar edição</button>
+      <div id="mensagem" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>📦 Itens cadastrados</h2>
+
+      <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap">
+        <input id="busca" placeholder="Buscar por nome ou patrimônio..." style="flex:1; min-width:200px" oninput="carregarLista()">
+        <select id="filtroUnidade" style="max-width:200px" onchange="carregarLista()">
+          <option value="">Todas as unidades</option>
+        </select>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Nome</th><th>Patrimônio</th><th>Tipo</th><th>Unidade</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody id="listaInventario"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="supabaseClient.js"></script>
+  <script>
+    async function iniciar() {
+      const sessao = await exigirLogin()
+      if (!sessao) return
+
+      const selUnidade = document.getElementById('unidade')
+      const selFiltro = document.getElementById('filtroUnidade')
+      UNIDADES.forEach(u => {
+        selUnidade.appendChild(new Option(u, u))
+        selFiltro.appendChild(new Option(u, u))
+      })
+
+      carregarLista()
+    }
+
+    async function salvar() {
+      const msg = document.getElementById('mensagem')
+      msg.textContent = ''
+
+      const id = document.getElementById('itemId').value
+      const registro = {
+        nome: document.getElementById('nome').value.trim(),
+        patrimonio: document.getElementById('patrimonio').value.trim() || null,
+        tipo: document.getElementById('tipo').value.trim() || null,
+        unidade: document.getElementById('unidade').value,
+        status: document.getElementById('status').value,
+        observacao: document.getElementById('observacao').value.trim() || null,
+      }
+
+      if (!registro.nome || !registro.unidade) {
+        msg.textContent = 'Preencha pelo menos Nome e Unidade.'
+        msg.className = 'msg erro'
+        return
+      }
+
+      let erro
+      if (id) {
+        registro.atualizado_em = new Date().toISOString()
+        ;({ error: erro } = await supabaseClient.from('inventario').update(registro).eq('id', id))
+      } else {
+        ;({ error: erro } = await supabaseClient.from('inventario').insert(registro))
+      }
+
+      if (erro) {
+        msg.textContent = 'Erro ao salvar: ' + erro.message
+        msg.className = 'msg erro'
+        return
+      }
+
+      msg.textContent = id ? 'Item atualizado.' : 'Item cadastrado.'
+      msg.className = 'msg sucesso'
+      cancelarEdicao()
+      carregarLista()
+    }
+
+    function cancelarEdicao() {
+      document.getElementById('itemId').value = ''
+      document.getElementById('nome').value = ''
+      document.getElementById('patrimonio').value = ''
+      document.getElementById('tipo').value = ''
+      document.getElementById('status').value = 'ativo'
+      document.getElementById('observacao').value = ''
+      document.getElementById('tituloForm').textContent = '➕ Novo item'
+      document.getElementById('btnCancelar').hidden = true
+    }
+
+    async function editar(id, nome, patrimonio, tipo, unidade, status, observacao) {
+      document.getElementById('itemId').value = id
+      document.getElementById('nome').value = nome || ''
+      document.getElementById('patrimonio').value = patrimonio || ''
+      document.getElementById('tipo').value = tipo || ''
+      document.getElementById('unidade').value = unidade || ''
+      document.getElementById('status').value = status || 'ativo'
+      document.getElementById('observacao').value = observacao || ''
+      document.getElementById('tituloForm').textContent = '✏️ Editando item'
+      document.getElementById('btnCancelar').hidden = false
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    async function excluir(id) {
+      if (!confirm('Excluir este item do inventário?')) return
+      await supabaseClient.from('inventario').delete().eq('id', id)
+      carregarLista()
+    }
+
+    async function carregarLista() {
+      const busca = document.getElementById('busca').value.trim()
+      const filtroUnidade = document.getElementById('filtroUnidade').value
+
+      let query = supabaseClient.from('inventario').select('*').order('nome')
+      if (filtroUnidade) query = query.eq('unidade', filtroUnidade)
+      if (busca) query = query.or(`nome.ilike.%${busca}%,patrimonio.ilike.%${busca}%`)
+
+      const { data: itens } = await query
+
+      const corpo = document.getElementById('listaInventario')
+      corpo.innerHTML = ''
+      ;(itens || []).forEach(i => {
+        const tr = document.createElement('tr')
+        const statusLabel = { ativo: 'Ativo', manutencao: 'Em manutenção', baixado: 'Baixado' }[i.status] || i.status
+        tr.innerHTML = `
+          <td>${i.nome}</td>
+          <td>${i.patrimonio || '—'}</td>
+          <td>${i.tipo || '—'}</td>
+          <td>${i.unidade}</td>
+          <td>${statusLabel}</td>
+          <td style="white-space:nowrap">
+            <a href="#" onclick='editar(${i.id}, ${JSON.stringify(i.nome)}, ${JSON.stringify(i.patrimonio)}, ${JSON.stringify(i.tipo)}, ${JSON.stringify(i.unidade)}, ${JSON.stringify(i.status)}, ${JSON.stringify(i.observacao)}); return false;'>editar</a>
+            &nbsp;|&nbsp;
+            <a href="#" onclick='excluir(${i.id}); return false;'>excluir</a>
+          </td>
+        `
+        corpo.appendChild(tr)
+      })
+    }
+
+    iniciar()
+  </script>
+</body>
+</html>
