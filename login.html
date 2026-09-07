@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Login — Sistema Prisional</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="card login-box">
+      <h1>🔒 Sistema Prisional</h1>
+      <label>Usuário (e-mail)</label>
+      <input id="email" type="email" placeholder="seuemail@exemplo.com">
+      <label>Senha</label>
+      <input id="senha" type="password" placeholder="••••••••">
+      <button class="btn" style="width:100%" onclick="entrar()">Entrar</button>
+      <div id="mensagem" class="msg"></div>
+    </div>
+  </div>
+
+  <script src="supabaseClient.js"></script>
+  <script>
+    async function entrar() {
+      const email = document.getElementById('email').value.trim()
+      const senha = document.getElementById('senha').value
+      const msg = document.getElementById('mensagem')
+      msg.textContent = ''
+
+      if (!email || !senha) {
+        msg.textContent = 'Preencha usuário e senha.'
+        msg.className = 'msg erro'
+        return
+      }
+
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha })
+      if (error) {
+        msg.textContent = 'Usuário ou senha inválidos.'
+        msg.className = 'msg erro'
+        return
+      }
+      window.location.href = 'index.html'
+    }
+
+    // se já estiver logado, pula direto pro dashboard
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) window.location.href = 'index.html'
+    })
+  </script>
+</body>
+</html>

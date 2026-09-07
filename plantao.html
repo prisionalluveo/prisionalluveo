@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Plantão — Sistema Prisional</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="topo">
+    <div class="marca">🔒 Sistema Prisional</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="inventario.html">Inventário</a>
+      <a href="plantao.html">Plantão</a>
+      <a href="escala.html">Escala de Manutenção</a>
+      <a href="ordens.html">Ordens de Compra</a>
+      <a href="projetos.html">Projetos</a>
+    </nav>
+    <button onclick="sair()">Sair</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>📋 Registrar visita de hoje</h2>
+
+      <label>Data</label>
+      <input id="data" type="date">
+
+      <label>Unidade visitada</label>
+      <select id="unidade"></select>
+
+      <label>O que foi feito</label>
+      <textarea id="ocorrencia" placeholder="Descreva a visita, o que foi verificado ou resolvido..."></textarea>
+
+      <button class="btn" onclick="salvar()">Salvar registro</button>
+      <div id="mensagem" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Últimos registros</h2>
+      <table>
+        <thead>
+          <tr><th>Data</th><th>Unidade</th><th>Técnico</th><th>O que foi feito</th></tr>
+        </thead>
+        <tbody id="listaPlantao"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="supabaseClient.js"></script>
+  <script>
+    let sessaoAtual = null
+
+    function ehDiaUtil(dataStr) {
+      const d = new Date(dataStr + 'T00:00:00')
+      const dia = d.getDay() // 0=domingo, 6=sábado
+      return dia >= 1 && dia <= 5
+    }
+
+    async function iniciar() {
+      sessaoAtual = await exigirLogin()
+      if (!sessaoAtual) return
+
+      const selUnidade = document.getElementById('unidade')
+      UNIDADES.forEach(u => {
+        const opt = document.createElement('option')
+        opt.value = u
+        opt.textContent = u
+        selUnidade.appendChild(opt)
+      })
+
+      document.getElementById('data').value = new Date().toISOString().slice(0, 10)
+      carregarLista()
+    }
+
+    async function salvar() {
+      const msg = document.getElementById('mensagem')
+      msg.textContent = ''
+
+      const data = document.getElementById('data').value
+      const unidade = document.getElementById('unidade').value
+      const ocorrencia = document.getElementById('ocorrencia').value.trim()
+
+      if (!data || !unidade || !ocorrencia) {
+        msg.textContent = 'Preencha data, unidade e o que foi feito.'
+        msg.className = 'msg erro'
+        return
+      }
+      if (!ehDiaUtil(data)) {
+        msg.textContent = 'Atenção: essa data cai num fim de semana. Confirma que quer registrar mesmo assim? Se sim, salve de novo.'
+        msg.className = 'msg erro'
+        // permite salvar mesmo assim numa segunda tentativa (não bloqueia de vez)
+        if (!confirm('A data escolhida é fim de semana. Registrar mesmo assim?')) return
+      }
+
+      const tecnico = sessaoAtual.user.email
+
+      const { error } = await supabaseClient.from('plantao').insert({ data, unidade, tecnico, ocorrencia })
+      if (error) {
+        msg.textContent = 'Erro ao salvar: ' + error.message
+        msg.className = 'msg erro'
+        return
+      }
+
+      msg.textContent = 'Registro salvo com sucesso.'
+      msg.className = 'msg sucesso'
+      document.getElementById('ocorrencia').value = ''
+      carregarLista()
+    }
+
+    async function carregarLista() {
+      const { data: registros } = await supabaseClient
+        .from('plantao')
+        .select('*')
+        .order('data', { ascending: false })
+        .limit(30)
+
+      const corpo = document.getElementById('listaPlantao')
+      corpo.innerHTML = ''
+      ;(registros || []).forEach(r => {
+        const tr = document.createElement('tr')
+        tr.innerHTML = `
+          <td>${new Date(r.data + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+          <td>${r.unidade}</td>
+          <td>${r.tecnico}</td>
+          <td>${r.ocorrencia}</td>
+        `
+        corpo.appendChild(tr)
+      })
+    }
+
+    iniciar()
+  </script>
+</body>
+</html>
