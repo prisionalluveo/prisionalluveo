@@ -7,7 +7,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 // Unidades usadas em todo o sistema (Inventário, Plantão, Escala, Ordens, Projetos)
 const UNIDADES = [
-  'Instituto Penal Santo Expedito',
+  'Instituto Penal Djanira Dolores',
   'Penitenciária Talavera Bruce',
   'Instituto Penal Vicente Piragibe',
   'Presidio elizabeth de sa rego',
