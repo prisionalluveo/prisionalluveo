@@ -35,6 +35,10 @@ const UNIDADES = [
   'Presídio José Frederico Marques',
   'Instituto Penal Oscar Stevenson - feminina',
   'Presídio Ary Franco',
+  'Base Operacional',
+  'Prefeitura',
+  'Unidade Materno Infantil (UMI)',
+  'Jonas Lemos',
 ]
 
 // Protege uma página: se não estiver logado, manda pro login.
