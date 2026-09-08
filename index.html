@@ -16,6 +16,7 @@
       <a href="escala.html">Escala de Manutenção</a>
       <a href="ordens.html">Ordens de Compra</a>
       <a href="projetos.html">Projetos</a>
+      <a href="usuarios.html" class="somente-admin">Usuários</a>
     </nav>
     <button onclick="sair()">Sair</button>
   </div>
@@ -40,7 +41,7 @@
     </div>
 
     <div class="card">
-      <h2>🎫 Chamados — HelpDesk Andaraí</h2>
+      <h2>🎫 Chamados Prisional</h2>
       <div id="chamadosAtualizado" style="color:#9ca3af; font-size:12px; margin-bottom:10px"></div>
       <div style="display:flex; gap:20px; flex-wrap:wrap">
         <div><div style="font-size:22px; font-weight:700; color:#fbbf24" id="chAguardando">–</div><div style="font-size:12px; color:#9ca3af">Aguardando</div></div>
@@ -56,6 +57,7 @@
     async function carregar() {
       const sessao = await exigirLogin()
       if (!sessao) return
+      await aplicarPermissoesNav(sessao)
 
       const { count: totalInv } = await supabaseClient.from('inventario').select('*', { count: 'exact', head: true })
       document.getElementById('totalInventario').textContent = totalInv ?? 0
