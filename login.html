@@ -5,6 +5,7 @@
 <title>Login — Sistema Prisional</title>
 <link rel="stylesheet" href="estilo.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
   <div class="login-wrap">
@@ -14,13 +15,23 @@
       <input id="email" type="email" placeholder="seuemail@exemplo.com">
       <label>Senha</label>
       <input id="senha" type="password" placeholder="••••••••">
-      <button class="btn" style="width:100%" onclick="entrar()">Entrar</button>
+
+      <div class="cf-turnstile" style="margin-top:14px" data-sitekey="0x4AAAAAAEsJEdJh4vhxBKjX" data-callback="turnstileOk"></div>
+
+      <button class="btn" style="width:100%" onclick="entrar()" id="btnEntrar" disabled>Entrar</button>
       <div id="mensagem" class="msg"></div>
     </div>
   </div>
 
   <script src="supabaseClient.js"></script>
   <script>
+    let tokenCaptcha = null
+
+    function turnstileOk(token) {
+      tokenCaptcha = token
+      document.getElementById('btnEntrar').disabled = false
+    }
+
     async function entrar() {
       const email = document.getElementById('email').value.trim()
       const senha = document.getElementById('senha').value
@@ -32,11 +43,25 @@
         msg.className = 'msg erro'
         return
       }
+      if (!tokenCaptcha) {
+        msg.textContent = 'Aguarde a verificação de segurança carregar.'
+        msg.className = 'msg erro'
+        return
+      }
 
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha })
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password: senha,
+        options: { captchaToken: tokenCaptcha },
+      })
+
       if (error) {
         msg.textContent = 'Usuário ou senha inválidos.'
         msg.className = 'msg erro'
+        // token do Turnstile é de uso único — reseta o widget pra tentar de novo
+        if (window.turnstile) window.turnstile.reset()
+        tokenCaptcha = null
+        document.getElementById('btnEntrar').disabled = true
         return
       }
       window.location.href = 'index.html'
