@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Usuários — Sistema Prisional</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="topo">
+    <div class="marca">🔒 Sistema Prisional</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="inventario.html">Inventário</a>
+      <a href="infraestrutura.html">Infraestrutura</a>
+      <a href="plantao.html">Plantão</a>
+      <a href="escala.html">Escala de Manutenção</a>
+      <a href="ordens.html">Ordens de Compra</a>
+      <a href="projetos.html">Projetos</a>
+      <a href="usuarios.html">Usuários</a>
+    </nav>
+    <button onclick="sair()">Sair</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>👤 Novo usuário</h2>
+      <p style="color:#9ca3af; font-size:13px; margin-top:-8px">
+        Primeiro crie o login em <b>Supabase → Authentication → Users → Add user</b>,
+        depois cole o UID gerado aqui pra definir nome e papel.
+      </p>
+
+      <label>UID do usuário (copiado do Supabase)</label>
+      <input id="uid" placeholder="ex: bce756a2-ed0f-4b74-b466-870c1d43f2cd">
+
+      <label>Nome</label>
+      <input id="nome" placeholder="Nome completo">
+
+      <label>Papel</label>
+      <select id="papel">
+        <option value="tecnico">Técnico</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <button class="btn" onclick="salvar()">Salvar</button>
+      <div id="mensagem" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Usuários cadastrados</h2>
+      <table>
+        <thead><tr><th>Nome</th><th>Papel</th><th>UID</th><th></th></tr></thead>
+        <tbody id="listaUsuarios"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="supabaseClient.js"></script>
+  <script>
+    async function iniciar() {
+      const sessao = await exigirLogin()
+      if (!sessao) return
+      const perfil = await exigirAdmin(sessao)
+      if (!perfil) return
+      carregarLista()
+    }
+
+    async function salvar() {
+      const msg = document.getElementById('mensagem')
+      msg.textContent = ''
+
+      const id = document.getElementById('uid').value.trim()
+      const nome = document.getElementById('nome').value.trim()
+      const papel = document.getElementById('papel').value
+
+      if (!id || !nome) {
+        msg.textContent = 'Preencha o UID e o nome.'
+        msg.className = 'msg erro'
+        return
+      }
+
+      const { error } = await supabaseClient.from('perfis').upsert({ id, nome, papel })
+      if (error) {
+        msg.textContent = 'Erro ao salvar: ' + error.message
+        msg.className = 'msg erro'
+        return
+      }
+
+      msg.textContent = 'Usuário salvo.'
+      msg.className = 'msg sucesso'
+      document.getElementById('uid').value = ''
+      document.getElementById('nome').value = ''
+      carregarLista()
+    }
+
+    async function mudarPapel(id, novoPapel) {
+      await supabaseClient.from('perfis').update({ papel: novoPapel }).eq('id', id)
+      carregarLista()
+    }
+
+    async function remover(id) {
+      if (!confirm('Remover o perfil desse usuário? (o login continua existindo no Supabase, só perde o papel definido aqui)')) return
+      await supabaseClient.from('perfis').delete().eq('id', id)
+      carregarLista()
+    }
+
+    async function carregarLista() {
+      const { data: usuarios } = await supabaseClient.from('perfis').select('*').order('nome')
+      const corpo = document.getElementById('listaUsuarios')
+      corpo.innerHTML = ''
+      ;(usuarios || []).forEach(u => {
+        const tr = document.createElement('tr')
+        tr.innerHTML = `
+          <td>${u.nome}</td>
+          <td>
+            <select onchange="mudarPapel('${u.id}', this.value)" style="padding:4px 6px; font-size:12px">
+              <option value="tecnico" ${u.papel === 'tecnico' ? 'selected' : ''}>Técnico</option>
+              <option value="admin" ${u.papel === 'admin' ? 'selected' : ''}>Admin</option>
+            </select>
+          </td>
+          <td style="font-size:11px; color:#9ca3af">${u.id}</td>
+          <td><a href="#" onclick="remover('${u.id}'); return false;">remover</a></td>
+        `
+        corpo.appendChild(tr)
+      })
+    }
+
+    iniciar()
+  </script>
+</body>
+</html>

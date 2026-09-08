@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Infraestrutura — Sistema Prisional</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="topo">
+    <div class="marca">🔒 Sistema Prisional</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="inventario.html">Inventário</a>
+      <a href="infraestrutura.html">Infraestrutura</a>
+      <a href="plantao.html">Plantão</a>
+      <a href="escala.html">Escala de Manutenção</a>
+      <a href="ordens.html">Ordens de Compra</a>
+      <a href="projetos.html">Projetos</a>
+      <a href="usuarios.html" class="somente-admin">Usuários</a>
+    </nav>
+    <button onclick="sair()">Sair</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2 id="tituloForm">🌐 Configuração de rede por unidade</h2>
+      <input type="hidden" id="regId">
+
+      <label>Unidade</label>
+      <select id="unidade"></select>
+
+      <label>Range</label>
+      <input id="range_ip" placeholder="Ex: 10.9.9.?">
+
+      <label>Máscara</label>
+      <input id="mascara" placeholder="Ex: 255.255.255.128">
+
+      <label>Gateway</label>
+      <input id="gateway" placeholder="Ex: 10.9.9.129">
+
+      <label>IP Vita</label>
+      <input id="ip_vita" placeholder="Ex: 10.9.9.240">
+
+      <label>IP Ponto</label>
+      <input id="ip_ponto" placeholder="Ex: 10.9.9.164">
+
+      <button class="btn" onclick="salvar()">Salvar</button>
+      <button class="btn" style="background:#374151" onclick="cancelarEdicao()" id="btnCancelar" hidden>Cancelar edição</button>
+      <div id="mensagem" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Unidades cadastradas</h2>
+      <div style="margin-bottom:14px">
+        <input id="busca" placeholder="Buscar por unidade..." oninput="carregarLista()">
+      </div>
+      <table>
+        <thead>
+          <tr><th>Unidade</th><th>Range</th><th>Máscara</th><th>Gateway</th><th>IP Vita</th><th>IP Ponto</th><th></th></tr>
+        </thead>
+        <tbody id="listaInfra"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="supabaseClient.js"></script>
+  <script>
+    async function iniciar() {
+      const sessao = await exigirLogin()
+      if (!sessao) return
+      await aplicarPermissoesNav(sessao)
+
+      const selUnidade = document.getElementById('unidade')
+      UNIDADES.forEach(u => selUnidade.appendChild(new Option(u, u)))
+
+      carregarLista()
+    }
+
+    async function salvar() {
+      const msg = document.getElementById('mensagem')
+      msg.textContent = ''
+
+      const id = document.getElementById('regId').value
+      const registro = {
+        unidade: document.getElementById('unidade').value,
+        range_ip: document.getElementById('range_ip').value.trim() || null,
+        mascara: document.getElementById('mascara').value.trim() || null,
+        gateway: document.getElementById('gateway').value.trim() || null,
+        ip_vita: document.getElementById('ip_vita').value.trim() || null,
+        ip_ponto: document.getElementById('ip_ponto').value.trim() || null,
+      }
+
+      if (!registro.unidade) {
+        msg.textContent = 'Escolha a unidade.'
+        msg.className = 'msg erro'
+        return
+      }
+
+      let erro
+      if (id) {
+        ;({ error: erro } = await supabaseClient.from('configuracao_rede').update(registro).eq('id', id))
+      } else {
+        ;({ error: erro } = await supabaseClient.from('configuracao_rede').upsert(registro, { onConflict: 'unidade' }))
+      }
+
+      if (erro) {
+        msg.textContent = 'Erro ao salvar: ' + erro.message
+        msg.className = 'msg erro'
+        return
+      }
+
+      msg.textContent = 'Configuração salva.'
+      msg.className = 'msg sucesso'
+      cancelarEdicao()
+      carregarLista()
+    }
+
+    function cancelarEdicao() {
+      document.getElementById('regId').value = ''
+      document.getElementById('range_ip').value = ''
+      document.getElementById('mascara').value = ''
+      document.getElementById('gateway').value = ''
+      document.getElementById('ip_vita').value = ''
+      document.getElementById('ip_ponto').value = ''
+      document.getElementById('tituloForm').textContent = '🌐 Configuração de rede por unidade'
+      document.getElementById('btnCancelar').hidden = true
+    }
+
+    async function editar(id, unidade, range_ip, mascara, gateway, ip_vita, ip_ponto) {
+      document.getElementById('regId').value = id
+      document.getElementById('unidade').value = unidade || ''
+      document.getElementById('range_ip').value = range_ip || ''
+      document.getElementById('mascara').value = mascara || ''
+      document.getElementById('gateway').value = gateway || ''
+      document.getElementById('ip_vita').value = ip_vita || ''
+      document.getElementById('ip_ponto').value = ip_ponto || ''
+      document.getElementById('tituloForm').textContent = '✏️ Editando configuração — ' + unidade
+      document.getElementById('btnCancelar').hidden = false
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    async function excluir(id) {
+      if (!confirm('Excluir esta configuração de rede?')) return
+      await supabaseClient.from('configuracao_rede').delete().eq('id', id)
+      carregarLista()
+    }
+
+    async function carregarLista() {
+      const busca = document.getElementById('busca').value.trim()
+      let query = supabaseClient.from('configuracao_rede').select('*').order('unidade')
+      if (busca) query = query.ilike('unidade', `%${busca}%`)
+
+      const { data: registros } = await query
+
+      const corpo = document.getElementById('listaInfra')
+      corpo.innerHTML = ''
+      ;(registros || []).forEach(r => {
+        const tr = document.createElement('tr')
+        tr.innerHTML = `
+          <td>${r.unidade}</td>
+          <td>${r.range_ip || '—'}</td>
+          <td>${r.mascara || '—'}</td>
+          <td>${r.gateway || '—'}</td>
+          <td>${r.ip_vita || '—'}</td>
+          <td>${r.ip_ponto || '—'}</td>
+          <td style="white-space:nowrap">
+            <a href="#" onclick='editar(${r.id}, ${JSON.stringify(r.unidade)}, ${JSON.stringify(r.range_ip)}, ${JSON.stringify(r.mascara)}, ${JSON.stringify(r.gateway)}, ${JSON.stringify(r.ip_vita)}, ${JSON.stringify(r.ip_ponto)}); return false;'>editar</a>
+            &nbsp;|&nbsp;
+            <a href="#" onclick='excluir(${r.id}); return false;'>excluir</a>
+          </td>
+        `
+        corpo.appendChild(tr)
+      })
+    }
+
+    iniciar()
+  </script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Esqueci minha senha — Sistema Prisional</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="card login-box">
+      <h1>🔒 Esqueci minha senha</h1>
+      <p style="color:#9ca3af; font-size:13px">Digite seu e-mail — vamos mandar um link pra você criar uma senha nova.</p>
+
+      <label>E-mail</label>
+      <input id="email" type="email" placeholder="seuemail@exemplo.com">
+
+      <button class="btn" style="width:100%" onclick="enviar()">Enviar link</button>
+      <div id="mensagem" class="msg"></div>
+
+      <p style="text-align:center; margin-top:16px">
+        <a href="login.html">Voltar pro login</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="supabaseClient.js"></script>
+  <script>
+    async function enviar() {
+      const email = document.getElementById('email').value.trim()
+      const msg = document.getElementById('mensagem')
+      msg.textContent = ''
+
+      if (!email) {
+        msg.textContent = 'Digite seu e-mail.'
+        msg.className = 'msg erro'
+        return
+      }
+
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/redefinir-senha.html',
+      })
+
+      if (error) {
+        msg.textContent = 'Erro: ' + error.message
+        msg.className = 'msg erro'
+        return
+      }
+
+      msg.textContent = 'Se esse e-mail estiver cadastrado, um link foi enviado. Confira sua caixa de entrada (e o spam).'
+      msg.className = 'msg sucesso'
+    }
+  </script>
+</body>
+</html>
