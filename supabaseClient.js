@@ -63,11 +63,15 @@ async function obterPerfil(sessao) {
 }
 
 // Esconde da navegação os itens marcados com class="somente-admin"
-// quando o usuário logado não for admin
+// quando o usuário logado não for admin, e mostra o nome dele ao lado do Sair
 async function aplicarPermissoesNav(sessao) {
   const perfil = await obterPerfil(sessao)
   if (perfil.papel !== 'admin') {
     document.querySelectorAll('.somente-admin').forEach(el => el.remove())
+  }
+  const spanUsuario = document.getElementById('usuarioLogado')
+  if (spanUsuario) {
+    spanUsuario.textContent = perfil.nome + (perfil.papel === 'admin' ? ' (admin)' : '')
   }
   return perfil
 }

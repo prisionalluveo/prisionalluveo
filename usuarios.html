@@ -19,6 +19,7 @@
       <a href="projetos.html">Projetos</a>
       <a href="usuarios.html">Usuários</a>
     </nav>
+    <span id="usuarioLogado" style="color:#9ca3af; font-size:13px; margin-right:12px"></span>
     <button onclick="sair()">Sair</button>
   </div>
 
@@ -62,6 +63,7 @@
       if (!sessao) return
       const perfil = await exigirAdmin(sessao)
       if (!perfil) return
+      await aplicarPermissoesNav(sessao)
       carregarLista()
     }
 
