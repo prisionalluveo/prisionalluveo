@@ -5,6 +5,7 @@
 <title>Esqueci minha senha — Sistema Prisional</title>
 <link rel="stylesheet" href="estilo.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
   <div class="login-wrap">
@@ -15,7 +16,9 @@
       <label>E-mail</label>
       <input id="email" type="email" placeholder="seuemail@exemplo.com">
 
-      <button class="btn" style="width:100%" onclick="enviar()">Enviar link</button>
+      <div class="cf-turnstile" style="margin-top:14px" data-sitekey="0x4AAAAAAEsJEdJh4vhxBKjX" data-callback="turnstileOk"></div>
+
+      <button class="btn" style="width:100%" onclick="enviar()" id="btnEnviar" disabled>Enviar link</button>
       <div id="mensagem" class="msg"></div>
 
       <p style="text-align:center; margin-top:16px">
@@ -26,6 +29,13 @@
 
   <script src="supabaseClient.js"></script>
   <script>
+    let tokenCaptcha = null
+
+    function turnstileOk(token) {
+      tokenCaptcha = token
+      document.getElementById('btnEnviar').disabled = false
+    }
+
     async function enviar() {
       const email = document.getElementById('email').value.trim()
       const msg = document.getElementById('mensagem')
@@ -36,10 +46,20 @@
         msg.className = 'msg erro'
         return
       }
+      if (!tokenCaptcha) {
+        msg.textContent = 'Aguarde a verificação de segurança carregar.'
+        msg.className = 'msg erro'
+        return
+      }
 
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + '/redefinir-senha.html',
+        captchaToken: tokenCaptcha,
       })
+
+      if (window.turnstile) window.turnstile.reset()
+      tokenCaptcha = null
+      document.getElementById('btnEnviar').disabled = true
 
       if (error) {
         msg.textContent = 'Erro: ' + error.message
