@@ -29,8 +29,16 @@
 
     <div class="card" style="display:flex; gap:24px; flex-wrap:wrap">
       <div>
-        <div style="font-size:28px; font-weight:700" id="totalInventario">–</div>
-        <div style="color:#9ca3af; font-size:13px">Itens no Inventário</div>
+        <div style="font-size:28px; font-weight:700" id="totalComputadores">–</div>
+        <div style="color:#9ca3af; font-size:13px">Computadores</div>
+      </div>
+      <div>
+        <div style="font-size:28px; font-weight:700" id="totalMonitores">–</div>
+        <div style="color:#9ca3af; font-size:13px">Monitores</div>
+      </div>
+      <div>
+        <div style="font-size:28px; font-weight:700" id="totalImpressoras">–</div>
+        <div style="color:#9ca3af; font-size:13px">Impressoras</div>
       </div>
       <div>
         <div style="font-size:28px; font-weight:700" id="totalProjetos">–</div>
@@ -61,8 +69,14 @@
       if (!sessao) return
       await aplicarPermissoesNav(sessao)
 
-      const { count: totalInv } = await supabaseClient.from('inventario').select('*', { count: 'exact', head: true })
-      document.getElementById('totalInventario').textContent = totalInv ?? 0
+      const { count: totalComp } = await supabaseClient.from('inventario').select('*', { count: 'exact', head: true }).eq('tipo', 'computador')
+      document.getElementById('totalComputadores').textContent = totalComp ?? 0
+
+      const { count: totalMon } = await supabaseClient.from('inventario').select('*', { count: 'exact', head: true }).eq('tipo', 'monitor')
+      document.getElementById('totalMonitores').textContent = totalMon ?? 0
+
+      const { count: totalImp } = await supabaseClient.from('inventario').select('*', { count: 'exact', head: true }).eq('tipo', 'impressora')
+      document.getElementById('totalImpressoras').textContent = totalImp ?? 0
 
       const { count: totalProj } = await supabaseClient.from('projetos').select('*', { count: 'exact', head: true }).eq('status', 'em-andamento')
       document.getElementById('totalProjetos').textContent = totalProj ?? 0
