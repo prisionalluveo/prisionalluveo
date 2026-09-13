@@ -47,6 +47,13 @@
         <option value="baixado">Baixado</option>
       </select>
 
+      <label>Categoria</label>
+      <select id="categoria">
+        <option value="">— não informado —</option>
+        <option value="proprio">Próprio (SEAP)</option>
+        <option value="alugado">Alugado</option>
+      </select>
+
       <label>Observação</label>
       <textarea id="observacao" placeholder="Detalhes adicionais (opcional)"></textarea>
 
@@ -63,11 +70,16 @@
         <select id="filtroUnidade" style="max-width:200px" onchange="carregarLista()">
           <option value="">Todas as unidades</option>
         </select>
+        <select id="filtroCategoria" style="max-width:180px" onchange="carregarLista()">
+          <option value="">Todas as categorias</option>
+          <option value="proprio">Próprio (SEAP)</option>
+          <option value="alugado">Alugado</option>
+        </select>
       </div>
 
       <table>
         <thead>
-          <tr><th>Nome</th><th>Patrimônio</th><th>Tipo</th><th>Unidade</th><th>Status</th><th></th></tr>
+          <tr><th>Nome</th><th>Patrimônio</th><th>Tipo</th><th>Unidade</th><th>Status</th><th>Categoria</th><th></th></tr>
         </thead>
         <tbody id="listaInventario"></tbody>
       </table>
@@ -102,6 +114,7 @@
         tipo: document.getElementById('tipo').value.trim() || null,
         unidade: document.getElementById('unidade').value,
         status: document.getElementById('status').value,
+        categoria: document.getElementById('categoria').value || null,
         observacao: document.getElementById('observacao').value.trim() || null,
       }
 
@@ -137,18 +150,20 @@
       document.getElementById('patrimonio').value = ''
       document.getElementById('tipo').value = ''
       document.getElementById('status').value = 'ativo'
+      document.getElementById('categoria').value = ''
       document.getElementById('observacao').value = ''
       document.getElementById('tituloForm').textContent = '➕ Novo item'
       document.getElementById('btnCancelar').hidden = true
     }
 
-    async function editar(id, nome, patrimonio, tipo, unidade, status, observacao) {
+    async function editar(id, nome, patrimonio, tipo, unidade, status, observacao, categoria) {
       document.getElementById('itemId').value = id
       document.getElementById('nome').value = nome || ''
       document.getElementById('patrimonio').value = patrimonio || ''
       document.getElementById('tipo').value = tipo || ''
       document.getElementById('unidade').value = unidade || ''
       document.getElementById('status').value = status || 'ativo'
+      document.getElementById('categoria').value = categoria || ''
       document.getElementById('observacao').value = observacao || ''
       document.getElementById('tituloForm').textContent = '✏️ Editando item'
       document.getElementById('btnCancelar').hidden = false
@@ -164,9 +179,11 @@
     async function carregarLista() {
       const busca = document.getElementById('busca').value.trim()
       const filtroUnidade = document.getElementById('filtroUnidade').value
+      const filtroCategoria = document.getElementById('filtroCategoria').value
 
       let query = supabaseClient.from('inventario').select('*').order('nome')
       if (filtroUnidade) query = query.eq('unidade', filtroUnidade)
+      if (filtroCategoria) query = query.eq('categoria', filtroCategoria)
       if (busca) query = query.or(`nome.ilike.%${busca}%,patrimonio.ilike.%${busca}%`)
 
       const { data: itens } = await query
@@ -176,14 +193,16 @@
       ;(itens || []).forEach(i => {
         const tr = document.createElement('tr')
         const statusLabel = { ativo: 'Ativo', manutencao: 'Em manutenção', baixado: 'Baixado' }[i.status] || i.status
+        const categoriaLabel = { proprio: 'Próprio (SEAP)', alugado: 'Alugado' }[i.categoria] || '—'
         tr.innerHTML = `
           <td>${i.nome}</td>
           <td>${i.patrimonio || '—'}</td>
           <td>${i.tipo || '—'}</td>
           <td>${i.unidade}</td>
           <td>${statusLabel}</td>
+          <td>${categoriaLabel}</td>
           <td style="white-space:nowrap">
-            <a href="#" onclick='editar(${i.id}, ${JSON.stringify(i.nome)}, ${JSON.stringify(i.patrimonio)}, ${JSON.stringify(i.tipo)}, ${JSON.stringify(i.unidade)}, ${JSON.stringify(i.status)}, ${JSON.stringify(i.observacao)}); return false;'>editar</a>
+            <a href="#" onclick='editar(${i.id}, ${JSON.stringify(i.nome)}, ${JSON.stringify(i.patrimonio)}, ${JSON.stringify(i.tipo)}, ${JSON.stringify(i.unidade)}, ${JSON.stringify(i.status)}, ${JSON.stringify(i.observacao)}, ${JSON.stringify(i.categoria)}); return false;'>editar</a>
             &nbsp;|&nbsp;
             <a href="#" onclick='excluir(${i.id}); return false;'>excluir</a>
           </td>

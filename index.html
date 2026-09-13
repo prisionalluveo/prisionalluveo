@@ -29,16 +29,20 @@
 
     <div class="card" style="display:flex; gap:24px; flex-wrap:wrap">
       <div>
-        <div style="font-size:28px; font-weight:700" id="totalComputadores">–</div>
-        <div style="color:#9ca3af; font-size:13px">Computadores</div>
+        <div style="font-size:28px; font-weight:700; color:#5eead4" id="totalCompProprio">–</div>
+        <div style="color:#9ca3af; font-size:13px">Computadores próprios (SEAP)</div>
       </div>
       <div>
-        <div style="font-size:28px; font-weight:700" id="totalMonitores">–</div>
-        <div style="color:#9ca3af; font-size:13px">Monitores</div>
+        <div style="font-size:28px; font-weight:700; color:#fbbf24" id="totalCompAlugado">–</div>
+        <div style="color:#9ca3af; font-size:13px">Computadores alugados</div>
       </div>
       <div>
-        <div style="font-size:28px; font-weight:700" id="totalImpressoras">–</div>
-        <div style="color:#9ca3af; font-size:13px">Impressoras</div>
+        <div style="font-size:28px; font-weight:700; color:#fbbf24" id="totalMonitores">–</div>
+        <div style="color:#9ca3af; font-size:13px">Monitores (alugados)</div>
+      </div>
+      <div>
+        <div style="font-size:28px; font-weight:700; color:#fbbf24" id="totalImpressoras">–</div>
+        <div style="color:#9ca3af; font-size:13px">Impressoras (alugadas)</div>
       </div>
       <div>
         <div style="font-size:28px; font-weight:700" id="totalProjetos">–</div>
@@ -69,8 +73,11 @@
       if (!sessao) return
       await aplicarPermissoesNav(sessao)
 
-      const { count: totalComp } = await supabaseClient.from('inventario').select('*', { count: 'exact', head: true }).eq('tipo', 'computador')
-      document.getElementById('totalComputadores').textContent = totalComp ?? 0
+      const { count: totalCompProprio } = await supabaseClient.from('inventario').select('*', { count: 'exact', head: true }).eq('tipo', 'computador').eq('categoria', 'proprio')
+      document.getElementById('totalCompProprio').textContent = totalCompProprio ?? 0
+
+      const { count: totalCompAlugado } = await supabaseClient.from('inventario').select('*', { count: 'exact', head: true }).eq('tipo', 'computador').eq('categoria', 'alugado')
+      document.getElementById('totalCompAlugado').textContent = totalCompAlugado ?? 0
 
       const { count: totalMon } = await supabaseClient.from('inventario').select('*', { count: 'exact', head: true }).eq('tipo', 'monitor')
       document.getElementById('totalMonitores').textContent = totalMon ?? 0
