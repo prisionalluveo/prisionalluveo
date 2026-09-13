@@ -27,41 +27,53 @@
     <h1>Visão geral</h1>
     <p style="color:#9ca3af">Resumo rápido do sistema.</p>
 
-    <div class="card" style="display:flex; gap:24px; flex-wrap:wrap">
-      <div>
-        <div style="font-size:28px; font-weight:700; color:#5eead4" id="totalCompProprio">–</div>
-        <div style="color:#9ca3af; font-size:13px">Computadores próprios (SEAP)</div>
+    <div class="grid-stats">
+      <div class="stat-box destaque-proprio">
+        <div class="valor" id="totalCompProprio">–</div>
+        <div class="rotulo">Computadores próprios (SEAP)</div>
       </div>
-      <div>
-        <div style="font-size:28px; font-weight:700; color:#fbbf24" id="totalCompAlugado">–</div>
-        <div style="color:#9ca3af; font-size:13px">Computadores alugados</div>
+      <div class="stat-box destaque-alugado">
+        <div class="valor" id="totalCompAlugado">–</div>
+        <div class="rotulo">Computadores alugados</div>
       </div>
-      <div>
-        <div style="font-size:28px; font-weight:700; color:#fbbf24" id="totalMonitores">–</div>
-        <div style="color:#9ca3af; font-size:13px">Monitores (alugados)</div>
+      <div class="stat-box destaque-alugado">
+        <div class="valor" id="totalMonitores">–</div>
+        <div class="rotulo">Monitores (alugados)</div>
       </div>
-      <div>
-        <div style="font-size:28px; font-weight:700; color:#fbbf24" id="totalImpressoras">–</div>
-        <div style="color:#9ca3af; font-size:13px">Impressoras (alugadas)</div>
+      <div class="stat-box destaque-alugado">
+        <div class="valor" id="totalImpressoras">–</div>
+        <div class="rotulo">Impressoras (alugadas)</div>
       </div>
-      <div>
-        <div style="font-size:28px; font-weight:700" id="totalProjetos">–</div>
-        <div style="color:#9ca3af; font-size:13px">Projetos em andamento</div>
+      <div class="stat-box">
+        <div class="valor" id="totalProjetos">–</div>
+        <div class="rotulo">Projetos em andamento</div>
       </div>
-      <div>
-        <div style="font-size:28px; font-weight:700" id="totalOrdens">–</div>
-        <div style="color:#9ca3af; font-size:13px">Ordens de compra abertas</div>
+      <div class="stat-box">
+        <div class="valor" id="totalOrdens">–</div>
+        <div class="rotulo">Ordens de compra abertas</div>
       </div>
     </div>
 
     <div class="card">
       <h2>🎫 Chamados Prisional</h2>
-      <div id="chamadosAtualizado" style="color:#9ca3af; font-size:12px; margin-bottom:10px"></div>
-      <div style="display:flex; gap:20px; flex-wrap:wrap">
-        <div><div style="font-size:22px; font-weight:700; color:#fbbf24" id="chAguardando">–</div><div style="font-size:12px; color:#9ca3af">Aguardando</div></div>
-        <div><div style="font-size:22px; font-weight:700; color:#f87171" id="chAtendimento">–</div><div style="font-size:12px; color:#9ca3af">Em atendimento</div></div>
-        <div><div style="font-size:22px; font-weight:700; color:#5eead4" id="chConclTec">–</div><div style="font-size:12px; color:#9ca3af">Concluído tecnicamente</div></div>
-        <div><div style="font-size:22px; font-weight:700; color:#fff" id="chConclFim">–</div><div style="font-size:12px; color:#9ca3af">Concluído/avaliado</div></div>
+      <div id="chamadosAtualizado" style="color:#9ca3af; font-size:12px; margin-bottom:14px"></div>
+      <div class="grid-stats" style="margin-bottom:0">
+        <div class="stat-box">
+          <div class="valor" style="color:#fbbf24; font-size:24px" id="chAguardando">–</div>
+          <div class="rotulo">Aguardando</div>
+        </div>
+        <div class="stat-box">
+          <div class="valor" style="color:#f87171; font-size:24px" id="chAtendimento">–</div>
+          <div class="rotulo">Em atendimento</div>
+        </div>
+        <div class="stat-box">
+          <div class="valor" style="color:#5eead4; font-size:24px" id="chConclTec">–</div>
+          <div class="rotulo">Concluído tecnicamente</div>
+        </div>
+        <div class="stat-box">
+          <div class="valor" style="font-size:24px" id="chConclFim">–</div>
+          <div class="rotulo">Concluído/avaliado</div>
+        </div>
       </div>
     </div>
   </div>

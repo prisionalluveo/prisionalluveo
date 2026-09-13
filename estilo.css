@@ -42,6 +42,31 @@ a { color: #5eead4; }
   margin-bottom: 20px;
 }
 
+.grid-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.stat-box {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.stat-box .valor {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.stat-box .rotulo {
+  color: #9ca3af;
+  font-size: 13px;
+  margin-top: 6px;
+}
+.stat-box.destaque-alugado .valor { color: #fbbf24; }
+.stat-box.destaque-proprio .valor { color: #5eead4; }
+
 h1 { font-size: 22px; margin: 0 0 4px; }
 h2 { font-size: 16px; margin: 0 0 14px; color: #93c5fd; }
 
