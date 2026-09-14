@@ -25,7 +25,8 @@
 
   <div class="container">
     <div class="card">
-      <h2>🧾 Nova ordem de compra</h2>
+      <h2 id="tituloForm">🧾 Nova ordem de compra</h2>
+      <input type="hidden" id="itemId">
 
       <label>Número da OC</label>
       <input id="numero" placeholder="Ex: OC-2026-014">
@@ -51,6 +52,7 @@
       </select>
 
       <button class="btn" onclick="salvar()">Salvar ordem</button>
+      <button class="btn" style="background:#374151" onclick="cancelarEdicao()" id="btnCancelar" hidden>Cancelar edição</button>
       <div id="mensagem" class="msg"></div>
     </div>
 
@@ -80,6 +82,7 @@
       const msg = document.getElementById('mensagem')
       msg.textContent = ''
 
+      const id = document.getElementById('itemId').value
       const numero = document.getElementById('numero').value.trim()
       const descricao = document.getElementById('descricao').value.trim() || null
       const fornecedor = document.getElementById('fornecedor').value.trim() || null
@@ -94,20 +97,49 @@
         return
       }
 
-      const { error } = await supabaseClient.from('ordens_compra').insert({ numero, descricao, fornecedor, valor_total, unidade, status })
+      const registro = { numero, descricao, fornecedor, valor_total, unidade, status }
+      let error
+      if (id) {
+        ;({ error } = await supabaseClient.from('ordens_compra').update(registro).eq('id', id))
+      } else {
+        ;({ error } = await supabaseClient.from('ordens_compra').insert(registro))
+      }
+
       if (error) {
         msg.textContent = 'Erro ao salvar: ' + error.message
         msg.className = 'msg erro'
         return
       }
 
-      msg.textContent = 'Ordem cadastrada.'
+      msg.textContent = id ? 'Ordem atualizada.' : 'Ordem cadastrada.'
       msg.className = 'msg sucesso'
+      cancelarEdicao()
+      carregarLista()
+    }
+
+    function cancelarEdicao() {
+      document.getElementById('itemId').value = ''
       document.getElementById('numero').value = ''
       document.getElementById('descricao').value = ''
       document.getElementById('fornecedor').value = ''
       document.getElementById('valorTotal').value = ''
-      carregarLista()
+      document.getElementById('unidade').value = ''
+      document.getElementById('status').value = 'aberta'
+      document.getElementById('tituloForm').textContent = '🧾 Nova ordem de compra'
+      document.getElementById('btnCancelar').hidden = true
+    }
+
+    function editar(id, numero, descricao, fornecedor, valor_total, unidade, status) {
+      document.getElementById('itemId').value = id
+      document.getElementById('numero').value = numero || ''
+      document.getElementById('descricao').value = descricao || ''
+      document.getElementById('fornecedor').value = fornecedor || ''
+      document.getElementById('valorTotal').value = valor_total ?? ''
+      document.getElementById('unidade').value = unidade || ''
+      document.getElementById('status').value = status || 'aberta'
+      document.getElementById('tituloForm').textContent = '✏️ Editando ordem'
+      document.getElementById('btnCancelar').hidden = false
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     async function mudarStatus(id, novoStatus) {
@@ -146,7 +178,11 @@
               ${Object.entries(statusLabel).map(([v, l]) => `<option value="${v}" ${o.status === v ? 'selected' : ''}>${l}</option>`).join('')}
             </select>
           </td>
-          <td><a href="#" onclick='excluir(${o.id}); return false;'>excluir</a></td>
+          <td>
+            <a href="#" onclick='editar(${o.id}, ${JSON.stringify(o.numero)}, ${JSON.stringify(o.descricao)}, ${JSON.stringify(o.fornecedor)}, ${o.valor_total ?? 'null'}, ${JSON.stringify(o.unidade)}, ${JSON.stringify(o.status)}); return false;'>editar</a>
+            &nbsp;|&nbsp;
+            <a href="#" onclick='excluir(${o.id}); return false;'>excluir</a>
+          </td>
         `
         corpo.appendChild(tr)
       })
