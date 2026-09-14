@@ -13,9 +13,9 @@
       <a href="index.html">Dashboard</a>
       <a href="inventario.html">Inventário</a>
       <a href="infraestrutura.html">Infraestrutura</a>
-      <a href="plantao.html">Plantão</a>
+      <a href="plantao.html">Rotina de Trabalho</a>
       <a href="escala.html">Escala de Manutenção</a>
-      <a href="ordens.html">Ordens de Compra</a>
+      <a href="ordens.html">Ordens de Fornecimento</a>
       <a href="projetos.html">Projetos</a>
       <a href="usuarios.html" class="somente-admin">Usuários</a>
     </nav>
@@ -55,7 +55,7 @@
     </div>
 
     <div class="card">
-      <h2>🧾 Ordens de Compra</h2>
+      <h2>🧾 Ordens de Fornecimento</h2>
       <div class="grid-stats" style="margin-bottom:0">
         <div class="stat-box">
           <div class="valor" style="color:#fbbf24; font-size:24px" id="ofAberta">–</div>
@@ -64,6 +64,10 @@
         <div class="stat-box">
           <div class="valor" style="color:#5eead4; font-size:24px" id="ofAprovada">–</div>
           <div class="rotulo">Aprovada</div>
+        </div>
+        <div class="stat-box">
+          <div class="valor" style="color:#a78bfa; font-size:24px" id="ofAguardandoTroca">–</div>
+          <div class="rotulo">Aguardando troca</div>
         </div>
         <div class="stat-box">
           <div class="valor" style="font-size:24px" id="ofRecebida">–</div>
@@ -125,8 +129,8 @@
       const { count: totalOrd } = await supabaseClient.from('ordens_compra').select('*', { count: 'exact', head: true }).eq('status', 'aberta')
       document.getElementById('totalOrdens').textContent = totalOrd ?? 0
 
-      const statusOF = ['aberta', 'aprovada', 'recebida', 'cancelada']
-      const idsOF = { aberta: 'ofAberta', aprovada: 'ofAprovada', recebida: 'ofRecebida', cancelada: 'ofCancelada' }
+      const statusOF = ['aberta', 'aprovada', 'aguardando_troca', 'recebida', 'cancelada']
+      const idsOF = { aberta: 'ofAberta', aprovada: 'ofAprovada', aguardando_troca: 'ofAguardandoTroca', recebida: 'ofRecebida', cancelada: 'ofCancelada' }
       for (const s of statusOF) {
         const { count } = await supabaseClient.from('ordens_compra').select('*', { count: 'exact', head: true }).eq('status', s)
         document.getElementById(idsOF[s]).textContent = count ?? 0

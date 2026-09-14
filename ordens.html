@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Ordens de Compra — Sistema Prisional</title>
+<title>Ordens de Fornecimento — Sistema Prisional</title>
 <link rel="stylesheet" href="estilo.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -13,9 +13,9 @@
       <a href="index.html">Dashboard</a>
       <a href="inventario.html">Inventário</a>
       <a href="infraestrutura.html">Infraestrutura</a>
-      <a href="plantao.html">Plantão</a>
+      <a href="plantao.html">Rotina de Trabalho</a>
       <a href="escala.html">Escala de Manutenção</a>
-      <a href="ordens.html">Ordens de Compra</a>
+      <a href="ordens.html">Ordens de Fornecimento</a>
       <a href="projetos.html">Projetos</a>
       <a href="usuarios.html" class="somente-admin">Usuários</a>
     </nav>
@@ -25,11 +25,11 @@
 
   <div class="container">
     <div class="card">
-      <h2 id="tituloForm">🧾 Nova ordem de compra</h2>
+      <h2 id="tituloForm">🧾 Nova ordem de fornecimento</h2>
       <input type="hidden" id="itemId">
 
-      <label>Número da OC</label>
-      <input id="numero" placeholder="Ex: OC-2026-014">
+      <label>Número da OF</label>
+      <input id="numero" placeholder="Ex: OF-2026-014">
 
       <label>Descrição</label>
       <input id="descricao" placeholder="O que está sendo comprado">
@@ -47,6 +47,7 @@
       <select id="status">
         <option value="aberta">Aberta</option>
         <option value="aprovada">Aprovada</option>
+        <option value="aguardando_troca">Aguardando troca</option>
         <option value="recebida">Recebida</option>
         <option value="cancelada">Cancelada</option>
       </select>
@@ -125,7 +126,7 @@
       document.getElementById('valorTotal').value = ''
       document.getElementById('unidade').value = ''
       document.getElementById('status').value = 'aberta'
-      document.getElementById('tituloForm').textContent = '🧾 Nova ordem de compra'
+      document.getElementById('tituloForm').textContent = '🧾 Nova ordem de fornecimento'
       document.getElementById('btnCancelar').hidden = true
     }
 
@@ -148,7 +149,7 @@
     }
 
     async function excluir(id) {
-      if (!confirm('Excluir esta ordem de compra?')) return
+      if (!confirm('Excluir esta ordem de fornecimento?')) return
       await supabaseClient.from('ordens_compra').delete().eq('id', id)
       carregarLista()
     }
@@ -163,7 +164,7 @@
 
       const corpo = document.getElementById('listaOrdens')
       corpo.innerHTML = ''
-      const statusLabel = { aberta: 'Aberta', aprovada: 'Aprovada', recebida: 'Recebida', cancelada: 'Cancelada' }
+      const statusLabel = { aberta: 'Aberta', aprovada: 'Aprovada', aguardando_troca: 'Aguardando troca', recebida: 'Recebida', cancelada: 'Cancelada' }
 
       ;(ordens || []).forEach(o => {
         const tr = document.createElement('tr')
