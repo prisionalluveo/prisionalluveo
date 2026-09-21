@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Login — Sistema Prisional</title>
-<link rel="stylesheet" href="estilo.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <meta charset="UTF-8">
+  <title>Login — Sistema Prisional</title>
+  <link rel="stylesheet" href="estilo.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="login-wrap">
     <div class="card login-box">
       <h1>🔒 Sistema Prisional</h1>
-      <label>Usuário (e-mail)</label>
-      <input id="email" type="email" placeholder="seuemail@exemplo.com">
-      <label>Senha</label>
-      <input id="senha" type="password" placeholder="••••••••">
+      
+      <form id="form-login" onsubmit="entrar(event)">
+        <label for="email">Usuário (e-mail)</label>
+        <input id="email" type="email" placeholder="seuemail@exemplo.com" required autocomplete="username">
+        
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" placeholder="••••••••" required autocomplete="current-password">
 
-      <div class="cf-turnstile" style="margin-top:14px" data-sitekey="0x4AAAAAAEsJEdJh4vhxBKjX" data-callback="turnstileOk"></div>
+        <button class="btn" style="width:100%; margin-top:14px;" type="submit" id="btnEntrar">Entrar</button>
+      </form>
 
-      <button class="btn" style="width:100%" onclick="entrar()" id="btnEntrar" disabled>Entrar</button>
-      <div id="mensagem" class="msg"></div>
+      <div id="mensagem" class="msg" style="margin-top:10px;"></div>
+      
       <p style="text-align:center; margin-top:16px">
         <a href="esqueci-senha.html">Esqueci minha senha</a>
       </p>
@@ -28,52 +31,46 @@
 
   <script src="supabaseClient.js"></script>
   <script>
-    let tokenCaptcha = null
+    async function entrar(e) {
+      if (e) e.preventDefault();
 
-    function turnstileOk(token) {
-      tokenCaptcha = token
-      document.getElementById('btnEntrar').disabled = false
-    }
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value;
+      const msg = document.getElementById('mensagem');
+      const btn = document.getElementById('btnEntrar');
 
-    async function entrar() {
-      const email = document.getElementById('email').value.trim()
-      const senha = document.getElementById('senha').value
-      const msg = document.getElementById('mensagem')
-      msg.textContent = ''
+      msg.textContent = '';
+      msg.className = 'msg';
 
       if (!email || !senha) {
-        msg.textContent = 'Preencha usuário e senha.'
-        msg.className = 'msg erro'
-        return
-      }
-      if (!tokenCaptcha) {
-        msg.textContent = 'Aguarde a verificação de segurança carregar.'
-        msg.className = 'msg erro'
-        return
+        msg.textContent = 'Preencha usuário e senha.';
+        msg.className = 'msg erro';
+        return;
       }
 
-      const { error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password: senha,
-        options: { captchaToken: tokenCaptcha },
-      })
+      btn.disabled = true;
+      btn.textContent = 'Aguarde...';
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: senha
+      });
 
       if (error) {
-        msg.textContent = 'Usuário ou senha inválidos.'
-        msg.className = 'msg erro'
-        // token do Turnstile é de uso único — reseta o widget pra tentar de novo
-        if (window.turnstile) window.turnstile.reset()
-        tokenCaptcha = null
-        document.getElementById('btnEntrar').disabled = true
-        return
+        msg.textContent = 'Usuário ou senha inválidos.';
+        msg.className = 'msg erro';
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+        return;
       }
-      window.location.href = 'index.html'
+
+      window.location.href = 'index.html';
     }
 
-    // se já estiver logado, pula direto pro dashboard
+    // Se já estiver logado, redireciona para o dashboard
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      if (session) window.location.href = 'index.html'
-    })
+      if (session) window.location.href = 'index.html';
+    });
   </script>
 </body>
 </html>

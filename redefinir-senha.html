@@ -1,80 +1,49 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Redefinir senha — Sistema Prisional</title>
-<link rel="stylesheet" href="estilo.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <title>Redefinir Senha - Sistema Prisional</title>
+  <link rel="stylesheet" href="estilo.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseClient.js"></script>
 </head>
 <body>
-  <div class="login-wrap">
-    <div class="card login-box">
-      <h1>🔒 Nova senha</h1>
-      <p id="aviso" style="color:#9ca3af; font-size:13px">Verificando o link...</p>
-
-      <div id="formulario" hidden>
-        <label>Nova senha</label>
-        <input id="senha" type="password" placeholder="Mínimo 6 caracteres">
-
-        <label>Confirmar nova senha</label>
-        <input id="senha2" type="password" placeholder="Repita a senha">
-
-        <button class="btn" style="width:100%" onclick="salvar()">Salvar nova senha</button>
-      </div>
-
-      <div id="mensagem" class="msg"></div>
-    </div>
+  <div class="login-container">
+    <h2>🔒 Redefinir Senha</h2>
+    <form id="form-redefinir">
+      <label>Nova Senha:</label>
+      <input type="password" id="nova-senha" required placeholder="Digite a nova senha">
+      <button type="submit" class="btn">Atualizar Senha</button>
+    </form>
+    <p id="mensagem" style="margin-top: 10px;"></p>
   </div>
 
-  <script src="supabaseClient.js"></script>
   <script>
-    // Quando o Supabase processa o link de recuperação, ele dispara esse evento
-    // com uma sessão temporária válida só pra trocar a senha
-    supabaseClient.auth.onAuthStateChange((evento, sessao) => {
-      const aviso = document.getElementById('aviso')
-      if (evento === 'PASSWORD_RECOVERY') {
-        aviso.textContent = 'Digite sua nova senha abaixo.'
-        document.getElementById('formulario').hidden = false
-      }
-    })
+    const form = document.getElementById('form-redefinir');
+    const mensagem = document.getElementById('mensagem');
 
-    // Se depois de 3s nada aconteceu, o link provavelmente é inválido/expirado
-    setTimeout(() => {
-      if (document.getElementById('formulario').hidden) {
-        document.getElementById('aviso').textContent =
-          'Link inválido ou expirado. Volte e solicite um novo link.'
-      }
-    }, 3000)
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const novaSenha = document.getElementById('nova-senha').value;
 
-    async function salvar() {
-      const senha = document.getElementById('senha').value
-      const senha2 = document.getElementById('senha2').value
-      const msg = document.getElementById('mensagem')
-      msg.textContent = ''
+      mensagem.textContent = "Atualizando...";
 
-      if (senha.length < 6) {
-        msg.textContent = 'A senha precisa ter pelo menos 6 caracteres.'
-        msg.className = 'msg erro'
-        return
-      }
-      if (senha !== senha2) {
-        msg.textContent = 'As senhas não coincidem.'
-        msg.className = 'msg erro'
-        return
-      }
+      // Chama a função do Supabase Auth para redefinir a senha do usuário autenticado via link
+      const { data, error } = await supabaseClient.auth.updateUser({
+        password: novaSenha
+      });
 
-      const { error } = await supabaseClient.auth.updateUser({ password: senha })
       if (error) {
-        msg.textContent = 'Erro ao salvar: ' + error.message
-        msg.className = 'msg erro'
-        return
+        mensagem.style.color = "red";
+        mensagem.textContent = "Erro ao redefinir: " + error.message;
+      } else {
+        mensagem.style.color = "green";
+        mensagem.textContent = "Senha alterada com sucesso! Redirecionando para o login...";
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 2000);
       }
-
-      msg.textContent = 'Senha alterada! Redirecionando pro login...'
-      msg.className = 'msg sucesso'
-      await supabaseClient.auth.signOut()
-      setTimeout(() => window.location.href = 'login.html', 2000)
-    }
+    });
   </script>
 </body>
 </html>
