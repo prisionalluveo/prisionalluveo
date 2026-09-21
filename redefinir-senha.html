@@ -2,48 +2,71 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Redefinir Senha - Sistema Prisional</title>
+  <title>Esqueci minha senha — Sistema Prisional</title>
   <link rel="stylesheet" href="estilo.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabaseClient.js"></script>
 </head>
 <body>
-  <div class="login-container">
-    <h2>🔒 Redefinir Senha</h2>
-    <form id="form-redefinir">
-      <label>Nova Senha:</label>
-      <input type="password" id="nova-senha" required placeholder="Digite a nova senha">
-      <button type="submit" class="btn">Atualizar Senha</button>
-    </form>
-    <p id="mensagem" style="margin-top: 10px;"></p>
+  <div class="login-wrap">
+    <div class="card login-box">
+      <h1>🔒 Esqueci minha senha</h1>
+      <p style="font-size:0.9em; color:#a0aec0; margin-bottom:16px;">
+        Digite seu e-mail — vamos mandar um link pra você criar uma senha nova.
+      </p>
+
+      <form id="form-esqueci" onsubmit="enviarLinkRecuperacao(event)">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" placeholder="seuemail@exemplo.com" required autocomplete="email">
+
+        <button class="btn" style="width:100%; margin-top:14px;" type="submit" id="btnEnviar">Enviar link</button>
+      </form>
+
+      <div id="mensagem" class="msg" style="margin-top:10px;"></div>
+
+      <p style="text-align:center; margin-top:16px">
+        <a href="login.html">Voltar pro login</a>
+      </p>
+    </div>
   </div>
 
+  <script src="supabaseClient.js"></script>
   <script>
-    const form = document.getElementById('form-redefinir');
-    const mensagem = document.getElementById('mensagem');
+    async function enviarLinkRecuperacao(e) {
+      if (e) e.preventDefault();
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const novaSenha = document.getElementById('nova-senha').value;
+      const email = document.getElementById('email').value.trim();
+      const msg = document.getElementById('mensagem');
+      const btn = document.getElementById('btnEnviar');
 
-      mensagem.textContent = "Atualizando...";
+      msg.textContent = '';
+      msg.className = 'msg';
 
-      // Chama a função do Supabase Auth para redefinir a senha do usuário autenticado via link
-      const { data, error } = await supabaseClient.auth.updateUser({
-        password: novaSenha
+      if (!email) {
+        msg.textContent = 'Informe o seu e-mail.';
+        msg.className = 'msg erro';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      // Solicita o envio do e-mail de redefinição apontando para a página de redefinição
+      const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/redefinir-senha.html'
       });
 
       if (error) {
-        mensagem.style.color = "red";
-        mensagem.textContent = "Erro ao redefinir: " + error.message;
-      } else {
-        mensagem.style.color = "green";
-        mensagem.textContent = "Senha alterada com sucesso! Redirecionando para o login...";
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 2000);
+        msg.textContent = 'Erro ao solicitar recuperação: ' + error.message;
+        msg.className = 'msg erro';
+        btn.disabled = false;
+        btn.textContent = 'Enviar link';
+        return;
       }
-    });
+
+      msg.textContent = 'Link enviado com sucesso! Verifique sua caixa de entrada e spam.';
+      msg.className = 'msg sucesso';
+      btn.textContent = 'Link enviado';
+    }
   </script>
 </body>
 </html>
