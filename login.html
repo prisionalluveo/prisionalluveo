@@ -5,6 +5,8 @@
   <title>Login — Sistema Prisional</title>
   <link rel="stylesheet" href="estilo.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Script Oficial do Cloudflare Turnstile -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
   <div class="login-wrap">
@@ -18,7 +20,10 @@
         <label for="senha">Senha</label>
         <input id="senha" type="password" placeholder="••••••••" required autocomplete="current-password">
 
-        <button class="btn" style="width:100%; margin-top:14px;" type="submit" id="btnEntrar">Entrar</button>
+        <!-- Widget do Captcha (Turnstile) configurado com a Site Key informada -->
+        <div class="cf-turnstile" style="margin-top:14px" data-sitekey="0x4AAAAAAEsJEdJh4vhxBKjX" data-callback="turnstileOk"></div>
+
+        <button class="btn" style="width:100%; margin-top:14px;" type="submit" id="btnEntrar" disabled>Entrar</button>
       </form>
 
       <div id="mensagem" class="msg" style="margin-top:10px;"></div>
@@ -31,6 +36,14 @@
 
   <script src="supabaseClient.js"></script>
   <script>
+    let tokenCaptcha = null;
+
+    // Libera o botão de login quando o Turnstile valida a interação do usuário
+    function turnstileOk(token) {
+      tokenCaptcha = token;
+      document.getElementById('btnEntrar').disabled = false;
+    }
+
     async function entrar(e) {
       if (e) e.preventDefault();
 
@@ -48,18 +61,30 @@
         return;
       }
 
-      btn.disabled = true;
-      btn.textContent = 'Aguarde...';
+      if (!tokenCaptcha) {
+        msg.textContent = 'Aguarde a verificação do Captcha.';
+        msg.className = 'msg erro';
+        return;
+      }
 
+      btn.disabled = true;
+      btn.textContent = 'Autenticando...';
+
+      // Envia credenciais e o token do Captcha para a API do Supabase
       const { data, error } = await supabaseClient.auth.signInWithPassword({
         email: email,
-        password: senha
+        password: senha,
+        options: { captchaToken: tokenCaptcha }
       });
 
       if (error) {
         msg.textContent = 'Usuário ou senha inválidos.';
         msg.className = 'msg erro';
-        btn.disabled = false;
+        
+        // Reseta o widget do Captcha, pois o token expirou na tentativa
+        if (window.turnstile) window.turnstile.reset();
+        tokenCaptcha = null;
+        btn.disabled = true;
         btn.textContent = 'Entrar';
         return;
       }
@@ -67,7 +92,7 @@
       window.location.href = 'index.html';
     }
 
-    // Se já estiver logado, redireciona para o dashboard
+    // Se já houver sessão ativa no navegador, redireciona para o Dashboard
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
       if (session) window.location.href = 'index.html';
     });
